@@ -69,7 +69,7 @@
 
         const isSelected = el => el.classList.contains('selected');
 
-        const selections = [ 50, 52, 58, 49 ];
+        const selections = [ 107, 103, 105, 108 ];
         {
             const $spans = $('span');
             selections.forEach(index => {
@@ -108,30 +108,52 @@
             const el1_index = selections[0];
             const $el1 = $spans[el1_index];
 
+            let lastabove = false;
             selections.slice(1).map(el2_index => {
                 const $el2 = $spans[el2_index];
                 console.log($el1, $el2);
                 // Order elements by leftness
                 const $left = $el1.offsetLeft < $el2.offsetLeft ? $el1 : $el2;
                 const $right = $el1.offsetLeft < $el2.offsetLeft ? $el2 : $el1;
-        
-                const above = true
-        
+
+                if ($left.offsetTop === $right.offsetTop) {
+                    // Same line
+                    const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
+                    const y1 = $left.offsetTop + ($left.offsetHeight / 2);
+                    const x2 = $right.offsetLeft + ($right.offsetWidth / 2) - x1;
+                    const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1;
+                    const above = !lastabove
+                    lastabove = above;
+                    const cx = x2 / 2;
+                    const cy = Math.sqrt(x2) * 4 * (above ? -1 : 1);
+
+                    const yOffset = $right.offsetHeight / 2 * (above ? -1 : 1);
+                    return `M${x1},${y1 + yOffset} q${cx},${cy} ${x2},${y2}`;
+                }
+
+                const above = $left.offsetTop < $right.offsetTop;
+                lastabove = above;
+                
                 // const $path = $('path')[0];
                 const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
-                const y1 = $left.offsetTop + ($left.offsetHeight / 2);
+                const yOffset1 = $left.offsetHeight / 2 * (above ? 1 : -1);
+                const y1 = $left.offsetTop + ($left.offsetHeight / 2) + yOffset1;
                 const x2 = ($right.offsetLeft + ($right.offsetWidth / 2)) - x1;
-                const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1;
-                const cx = x2 / 2;
-                // Find a good y offset for the control point
-                const cy = Math.max(y2 / 2, Math.sqrt(x2) * 4) * (above ? -1 : 1);
+                const yOffset2 = $right.offsetHeight / 2 * (above ? -1 : 1);
+                const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1 + yOffset2;
+
+                const c1x = x2 / 3;
+                const c1y = Math.max(y2 / 3, Math.sqrt(Math.abs(x2)) * 4) * (above ? 1 : -1);
+
+                const c2x = x2 / 3 * 2;
+                const c2y = Math.max(y2 / 3 * 2, Math.sqrt(Math.abs(x2)) * 4) * (above ? -1 : 1);
+
                 console.log($left, x1, y1);
                 console.log($right, x2, y2);
-                console.log(cx, cy);
-                
-                const yOffset = ($left.offsetHeight / 2) * (above ? -1 : 1);
+                console.log(c1x, c1y);
+                console.log(c2x, c2y);
         
-                return `M${x1},${y1 + yOffset} q${cx},${cy} ${x2},${y2}`
+                return `M${x1},${y1} c ${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`;
             }).forEach(createPath);
         }
         drawPath();
