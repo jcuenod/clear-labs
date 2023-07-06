@@ -4,11 +4,17 @@
     <meta charset="UTF-8">
     <title>Document</title>
     <style>
-        #app {
+        body {
             margin: 5rem;
             max-width: 50rem;
             margin: 5rem auto 2rem;
             line-height: 2rem;
+        }
+        div.instruction {
+            font-family: sans-serif;
+            margin-bottom: 1rem;
+            color: #999;
+            font-style: italic;
         }
         span {
             cursor: pointer;
@@ -34,6 +40,7 @@
     </style>
 </head>
 <body>
+    <div class="instruction"><b>Note:</b> You can click words to add/remove them from the selection. The center of the selection is the oldest word.</div>
     <div id="app"></div>
     
     <script lang="js">
