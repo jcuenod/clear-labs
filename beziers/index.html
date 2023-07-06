@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        #app {
+            margin: 5rem;
+            max-width: 50rem;
+            margin: 5rem auto 2rem;
+            line-height: 2rem;
+        }
+        span {
+            cursor: pointer;
+        }
+        svg {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        svg path {
+            stroke-width: 3;
+            stroke: pink;
+            stroke-linecap: round;
+            fill: none;
+        }
+        .selected {
+            background-color: pink;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script lang="js">
+        const $ = (selector) => {
+            return Array.from(document.querySelectorAll(selector));
+        }
+        const words = `Just before the Passover feast, Jesus knew that his time had come to depart from this world to the Father. Having loved his own who were in the world, he now loved them to the very end.
+2 The evening meal was in progress, and the devil had already put into the heart of Judas Iscariot, Simon’s son, that he should betray Jesus.
+3 Because Jesus knew that the Father had handed all things over to him, and that he had come from God and was going back to God,
+4 he got up from the meal, removed his outer clothes, took a towel and tied it around himself.
+5 He poured water into the washbasin and began to wash the disciples\’ feet and to dry them with the towel he had wrapped around himself.
+6 Then he came to Simon Peter. Peter said to him, “Lord, are you going to wash my feet?”
+7 Jesus replied, “You do not understand what I am doing now, but you will understand after these things.”
+8 Peter said to him, “You will never wash my feet!” Jesus replied, “If I do not wash you, you have no share with me.”
+9 Simon Peter said to him, “Lord, wash not only my feet, but also my hands and my head!”
+10 Jesus replied, “The one who has bathed needs only to wash his feet, but is completely clean. And you disciples are clean, but not every one of you.”
+11 (For Jesus knew the one who was going to betray him. For this reason he said, “Not every one of you is clean.”)
+`.replace(/[\n ]+/g, ' ').split(' ');
+
+        const $app = $('#app')[0];
+        const $spans = words.map(word => `<span>${word}</span>`).join(' ');
+        $app.innerHTML = $spans;
+
+        // const $svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        // $svg.setAttribute('left', '100%');
+
+        const isSelected = el => el.classList.contains('selected');
+
+        const selections = [ 50, 52, 58, 49 ];
+        {
+            const $spans = $('span');
+            selections.forEach(index => {
+                $spans[index].classList.add('selected');
+            });
+        }
+
+        document.addEventListener('click', e => {
+            if (e.target.tagName !== 'SPAN') return;
+            const $spans = $('span');
+            const $el = e.target;
+            const index = $spans.indexOf($el);
+            $el.classList.toggle('selected');
+            if (!isSelected($el)) {
+                selections.splice(selections.indexOf(index), 1);
+            } else {
+                selections.push(index);
+            }
+            drawPath();
+            console.log(selections);
+        })
+
+        const createPath = d => {
+            const $path = `
+                <svg width="100%" height="100%">
+                    <path d="${d}" />
+                </svg>`
+            document.body.innerHTML += $path;
+        }
+        
+        const drawPath = () => {
+            $('svg').forEach($svg => $svg.remove());
+
+            const $spans = $('span');
+
+            const el1_index = selections[0];
+            const $el1 = $spans[el1_index];
+
+            selections.slice(1).map(el2_index => {
+                const $el2 = $spans[el2_index];
+                console.log($el1, $el2);
+                // Order elements by leftness
+                const $left = $el1.offsetLeft < $el2.offsetLeft ? $el1 : $el2;
+                const $right = $el1.offsetLeft < $el2.offsetLeft ? $el2 : $el1;
+        
+                const above = true
+        
+                // const $path = $('path')[0];
+                const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
+                const y1 = $left.offsetTop + ($left.offsetHeight / 2);
+                const x2 = ($right.offsetLeft + ($right.offsetWidth / 2)) - x1;
+                const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1;
+                const cx = x2 / 2;
+                // Find a good y offset for the control point
+                const cy = Math.max(y2 / 2, Math.sqrt(x2) * 4) * (above ? -1 : 1);
+                console.log($left, x1, y1);
+                console.log($right, x2, y2);
+                console.log(cx, cy);
+                
+                const yOffset = ($left.offsetHeight / 2) * (above ? -1 : 1);
+        
+                return `M${x1},${y1 + yOffset} q${cx},${cy} ${x2},${y2}`
+            }).forEach(createPath);
+        }
+        drawPath();
+
+        // refresh path positions when the viewport is resized
+        window.addEventListener('resize', () => {
+            drawPath();
+        });
+    </script>
+</body>
+</html>
