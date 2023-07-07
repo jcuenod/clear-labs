@@ -64,9 +64,6 @@
         const $spans = words.map(word => `<span>${word}</span>`).join(' ');
         $app.innerHTML = $spans;
 
-        // const $svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        // $svg.setAttribute('left', '100%');
-
         const isSelected = el => el.classList.contains('selected');
 
         const selections = [ 107, 103, 105, 108 ];
@@ -111,44 +108,58 @@
             const $el1 = $spans[el1_index];
 
             let lastabove = false;
-            selections.slice(1).map(el2_index => {
+            const elementsOnTheSameLineAsEl1 = selections.slice(1).filter(el2_index => {
+                // Is on the same line?
                 const $el2 = $spans[el2_index];
-                console.log($el1, $el2);
+                return $el1.offsetTop === $el2.offsetTop
+            }).sort((el2_index1, el2_index2) => {
+                const $el2_1 = $spans[el2_index1];
+                const $el2_2 = $spans[el2_index2];
+                return $el2_1.offsetLeft - $el2_2.offsetLeft;
+            });
+            const sameLinePaths = elementsOnTheSameLineAsEl1.map(el2_index => {
+                const $el2 = $spans[el2_index];
                 // Order elements by leftness
                 const $left = $el1.offsetLeft < $el2.offsetLeft ? $el1 : $el2;
                 const $right = $el1.offsetLeft < $el2.offsetLeft ? $el2 : $el1;
 
-                if ($left.offsetTop === $right.offsetTop) {
-                    // Same line
-                    const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
-                    const y1 = $left.offsetTop + ($left.offsetHeight / 2);
-                    const x2 = $right.offsetLeft + ($right.offsetWidth / 2) - x1;
-                    const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1;
-                    const above = !lastabove
-                    lastabove = above;
-                    const cx = x2 / 2;
-                    const cy = Math.sqrt(x2) * 4 * (above ? -1 : 1);
-
-                    const yOffset = $right.offsetHeight / 2 * (above ? -1 : 1);
-                    return `M${x1},${y1 + yOffset} q${cx},${cy} ${x2},${y2}`;
-                }
-
-                const above = $left.offsetTop < $right.offsetTop;
-                lastabove = above;
-                
-                // const $path = $('path')[0];
                 const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
-                const yOffset1 = $left.offsetHeight / 2 * (above ? 1 : -1);
+                const y1 = $left.offsetTop + ($left.offsetHeight / 2);
+                const x2 = $right.offsetLeft + ($right.offsetWidth / 2) - x1;
+                const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1;
+                const above = !lastabove
+                lastabove = above;
+                const cx = x2 / 2;
+                const cy = Math.sqrt(x2) * 4 * (above ? -1 : 1);
+
+                const yOffset = $right.offsetHeight / 2 * (above ? -1 : 1);
+                return `M${x1},${y1 + yOffset} q${cx},${cy} ${x2},${y2}`;
+            });
+
+            const differentLinePaths = selections.slice(1).filter(el2_index => 
+                !elementsOnTheSameLineAsEl1.includes(el2_index)
+            ).map(el2_index => {
+                const $el2 = $spans[el2_index];
+                // Order elements by leftness
+                const $left = $el1.offsetLeft < $el2.offsetLeft ? $el1 : $el2;
+                const $right = $el1.offsetLeft < $el2.offsetLeft ? $el2 : $el1;
+
+                const leftIsAbove = $left.offsetTop < $right.offsetTop;
+
+                const x1 = $left.offsetLeft + ($left.offsetWidth / 2);
+                const yOffset1 = $left.offsetHeight / 2 * (leftIsAbove ? 1 : -1);
                 const y1 = $left.offsetTop + ($left.offsetHeight / 2) + yOffset1;
                 const x2 = ($right.offsetLeft + ($right.offsetWidth / 2)) - x1;
-                const yOffset2 = $right.offsetHeight / 2 * (above ? -1 : 1);
+                const yOffset2 = $right.offsetHeight / 2 * (leftIsAbove ? -1 : 1);
                 const y2 = $right.offsetTop + ($right.offsetHeight / 2) - y1 + yOffset2;
 
+                const distance = Math.sqrt(Math.pow(x2, 2) + Math.pow(y2, 2));
+
                 const c1x = x2 / 3;
-                const c1y = Math.max(y2 / 3, Math.sqrt(Math.abs(x2)) * 4) * (above ? 1 : -1);
+                const c1y = Math.max(y2 / 3, Math.sqrt(distance) * 3) * (leftIsAbove ? 2 : -2);
 
                 const c2x = x2 / 3 * 2;
-                const c2y = Math.max(y2 / 3 * 2, Math.sqrt(Math.abs(x2)) * 4) * (above ? -1 : 1);
+                const c2y = Math.max(y2 / 3 * 2, Math.sqrt(distance) * 3) * (leftIsAbove ? -0.5 : 0.5) ;
 
                 console.log($left, x1, y1);
                 console.log($right, x2, y2);
@@ -156,7 +167,13 @@
                 console.log(c2x, c2y);
         
                 return `M${x1},${y1} c ${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`;
-            }).forEach(createPath);
+            });
+
+
+            [
+                ...sameLinePaths,
+                ...differentLinePaths
+            ].forEach(createPath);
         }
         drawPath();
 
