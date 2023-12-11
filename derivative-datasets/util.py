@@ -49,3 +49,29 @@ for row in macula_tsv:
     if ref not in macula_tsv_by_ref:
         macula_tsv_by_ref[ref] = []
     macula_tsv_by_ref[ref].append(row)
+
+def get_closest_clause(node):
+    if node is None:
+        return None
+    if node.attrib.get("class") == "cl":
+        return node
+    return get_closest_clause(node.getparent())
+
+def sort_by_ref(a, b):
+    refa = a.attrib.get("ref")
+    refb = b.attrib.get("ref")
+
+    # ref is book chapter:verse!word
+    bookA, chapterA, verseA, wordA = re.split("[\ :!]", refa)
+    bookB, chapterB, verseB, wordB = re.split("[\ :!]", refb)
+    if bookA != bookB:
+        # books should never be different
+        return bookA > bookB
+    
+    if chapterA != chapterB:
+        return int(chapterA) - int(chapterB)
+    
+    if verseA != verseB:
+        return int(verseA) - int(verseB)
+    
+    return int(wordA) - int(wordB)
